@@ -7,7 +7,50 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <description>Parent POM for Store. This project has no implementation or business logic; all code lives in the child modules.</description>
+
     <modules>
         <module>backoffice</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>parent-only</id>
+            <activation>
+                <property>
+                    <name>project.packaging</name>
+                    <value>pom</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>3.6.2</version>
+                        <executions>
+                            <execution>
+                                <id>no-sources-in-parent</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <rules>
+                                        <requireFilesDontExist>
+                                            <files>
+                                                <file>${project.basedir}/src/main/java</file>
+                                                <file>${project.basedir}/src/test/java</file>
+                                            </files>
+                                            <message>Parent POM must not contain Java sources. Put implementation in child modules (e.g. backoffice).</message>
+                                        </requireFilesDontExist>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

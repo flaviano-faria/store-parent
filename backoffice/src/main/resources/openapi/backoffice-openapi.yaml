@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: Backoffice API
+  description: Backoffice API (only used by Orderclient))
+  version: 1.0.0
+servers:
+  - url: 'https'
+paths:
+  /menu:
+    get:
+      description: Gets the menu (all articles in all categories)
+      operationId: getMenu
+      responses:
+        200:
+          description: Reponse body contains the menu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiMenu"
+components:
+  schemas:
+    ApiArticle:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        picture:
+          type: string
+    ApiCategory:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiArticle"
+    ApiMenu:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiCategory"
