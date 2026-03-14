@@ -70,7 +70,7 @@
                         <configuration>
                             <inputSpec>src/main/resources/openapi/sample-openapi.yaml</inputSpec>
                             <generatorName>jaxrs-spec</generatorName>
-                            <apiPackage>com.storebackoffice.api</apiPackage>
+                            <apiPackage>com.storebackoffice.interfaces</apiPackage>
                             <modelPackage>com.storebackoffice.api.model</modelPackage>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>

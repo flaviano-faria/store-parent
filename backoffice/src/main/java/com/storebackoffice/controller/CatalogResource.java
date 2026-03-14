@@ -1,6 +1,6 @@
 package com.storebackoffice.controller;
 
-import com.storebackoffice.api.CatalogApi;
+import com.storebackoffice.interfaces.CatalogApi;
 import com.storebackoffice.api.model.ApiCatalog;
 import com.storebackoffice.api.model.ApiCategory;
 import com.storebackoffice.api.model.ApiProduct;
