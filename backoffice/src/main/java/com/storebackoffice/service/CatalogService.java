@@ -2,50 +2,48 @@ package com.storebackoffice.service;
 
 import com.storebackoffice.api.model.ApiCategory;
 import com.storebackoffice.api.model.ApiProduct;
+import com.storebackoffice.entity.Category;
+import com.storebackoffice.entity.Product;
+import com.storebackoffice.repository.CategoryRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 
 @ApplicationScoped
 public class CatalogService {
 
-    public List<ApiCategory> buildCategories() {
-        ApiCategory electronics = new ApiCategory()
-                .id(1L)
-                .name("Electronics")
-                .description("Electronic devices and accessories");
-        electronics.setProducts(List.of(
-                createProduct(101L, "Wireless Mouse", "Ergonomic wireless mouse", 29.99, "mouse.png", "ELEC-MOU-001"),
-                createProduct(102L, "USB-C Hub", "7-in-1 USB-C hub", 49.99, "hub.png", "ELEC-HUB-002")
-        ));
+    private final CategoryRepository categoryRepository;
 
-        ApiCategory clothing = new ApiCategory()
-                .id(2L)
-                .name("Clothing")
-                .description("Apparel and fashion");
-        clothing.setProducts(List.of(
-                createProduct(201L, "Cotton T-Shirt", "Organic cotton tee", 24.99, "tshirt.png", "CLTH-TSH-001"),
-                createProduct(202L, "Denim Jeans", "Classic fit jeans", 79.99, "jeans.png", "CLTH-JNS-002")
-        ));
-
-        ApiCategory home = new ApiCategory()
-                .id(3L)
-                .name("Home & Garden")
-                .description("Home improvement and garden supplies");
-        home.setProducts(List.of(
-                createProduct(301L, "LED Lamp", "Adjustable desk lamp", 39.99, "lamp.png", "HOME-LMP-001")
-        ));
-
-        return List.of(electronics, clothing, home);
+    public CatalogService(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
     }
 
-    public ApiProduct createProduct(Long id, String name, String description, Double price, String picture, String sku) {
+    @Transactional
+    public List<ApiCategory> findAllCategories() {
+        return categoryRepository.findAllCategories().stream()
+                .map(this::toApiCategory)
+                .toList();
+    }
+
+    private ApiCategory toApiCategory(Category entity) {
+        ApiCategory api = new ApiCategory()
+                .id(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription());
+        api.setProducts(entity.getProducts().stream()
+                .map(this::toApiProduct)
+                .toList());
+        return api;
+    }
+
+    private ApiProduct toApiProduct(Product entity) {
         return new ApiProduct()
-                .id(id)
-                .name(name)
-                .description(description)
-                .price(price)
-                .picture(picture)
-                .sku(sku);
+                .id(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .price(entity.getPrice())
+                .picture(entity.getPicture())
+                .sku(entity.getSku());
     }
 }

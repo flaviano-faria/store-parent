@@ -17,7 +17,7 @@ public class CatalogResource implements CatalogApi {
     @Override
     public ApiCatalog getCatalog() {
         ApiCatalog catalog = new ApiCatalog();
-        catalog.setCategories(catalogService.buildCategories());
+        catalog.setCategories(catalogService.findAllCategories());
         return catalog;
     }
 }
