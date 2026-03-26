@@ -34,7 +34,17 @@ Ensure PostgreSQL is running with a database named `store` on port 5432. Default
 - User: `postgres`
 - Password: (configure in `application.properties`)
 
-Hibernate runs DDL on startup: tables are created if they do not exist, and the schema is updated when entities change.
+### Seed initial data
+
+The sample data is in:
+
+- `src/main/resources/db/import-data.sql`
+
+After the app creates the tables, you can load the data with `psql`:
+
+```bash
+psql -U postgres -d store -f src/main/resources/db/import-data.sql
+```
 
 ## Running the application
 
@@ -53,14 +63,21 @@ The API is available at <http://localhost:8088>. Dev UI: <http://localhost:8088/
 | GET    | /catalog  | Full product catalog |
 | GET    | /hello    | Sample endpoint      |
 
+Quick test for catalog:
+
+```bash
+curl -s -H "Accept: application/json" http://localhost:8088/catalog
+```
+
 ## Project structure
 
 ```
 src/main/java/com/storebackoffice/
 ├── controller/     # JAX-RS resources (implements OpenAPI interfaces)
-├── service/        # Business logic
+├── service/        # Business logic (e.g. CatalogService)
+├── repository/     # Quarkus/Panache data access (e.g. CategoryRepository)
 ├── entity/         # JPA entities (Category, Product)
-└── (generated)     # target/generated-sources/openapi → interfaces, models
+└── (generated)    # target/generated-sources/openapi → interfaces, models
 ```
 
 ## Testing
