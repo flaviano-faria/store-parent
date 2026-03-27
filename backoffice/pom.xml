@@ -67,10 +67,61 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>set-openapi-spec-uri</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}"/>
+                                <pathconvert property="openapi.spec.path.unix" targetos="unix">
+                                    <path path="${project.basedir}/src/main/resources/openapi/sample-openapi.yaml"/>
+                                </pathconvert>
+                                <!-- Windows: file:///C:/... ; Unix: file:///home/... -->
+                                <condition property="openapi.spec.uri" value="file:///${openapi.spec.path.unix}" else="file://${openapi.spec.path.unix}">
+                                    <os family="windows"/>
+                                </condition>
+                                <echo file="${project.build.directory}/openapi-spec-uri.properties">openapi.spec.uri=${openapi.spec.uri}</echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <id>read-openapi-spec-uri</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>${project.build.directory}/openapi-spec-uri.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
@@ -82,7 +133,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>src/main/resources/openapi/sample-openapi.yaml</inputSpec>
+                            <inputSpec>${openapi.spec.uri}</inputSpec>
                             <generatorName>jaxrs-spec</generatorName>
                             <apiPackage>com.storebackoffice.interfaces</apiPackage>
                             <modelPackage>com.storebackoffice.api.model</modelPackage>
