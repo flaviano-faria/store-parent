@@ -1,38 +1,49 @@
 # store-parent
 
-Maven parent and aggregator project for the Store multi-module setup.
+Maven **aggregator** (multi-module) project for Store. The parent POM only wires modules and policy; **all application code lives in child modules** (today: `backoffice`).
 
-## Modules
+## Requirements
 
-- **backoffice**  Quarkus-based backoffice application
+- **JDK 21**
+- **Maven 3.9+** (or use the included wrapper scripts)
 
-## Building
+## Build
 
-To build all modules from the root:
+From the repository root:
 
 ```bash
 ./mvnw clean install
 ```
 
-Or on Windows:
+Windows (PowerShell or `cmd`):
 
 ```bash
 mvnw.cmd clean install
 ```
 
-## Running the Backoffice Application
-
-The backoffice module is the runnable Quarkus application. To run it in dev mode:
+If you use a system Maven:
 
 ```bash
-cd backoffice
-./mvnw quarkus:dev
+mvn clean install
 ```
 
-> **Note:** The Dev UI is available in dev mode at <http://localhost:8088/q/dev/>.
+A successful install runs the **backoffice** module’s OpenAPI code generation, compiles Quarkus sources, executes unit tests (in-memory H2; no Docker required), and installs artifacts to your local repository.
 
-For packaging, native builds, and other Quarkus-specific commands, see the [backoffice README](backoffice/README.md).
+## Modules
 
-## Learn More
+| Module       | Role |
+|-------------|------|
+| **backoffice** | Quarkus application: REST API, JPA/Panache, PostgreSQL at runtime. See [backoffice/README.md](backoffice/README.md). |
+
+## Parent POM
+
+The parent is `packaging` **pom** only. An enforcer rule blocks adding `src/main/java` or `src/test/java` at the root so implementation stays in modules.
+
+## Documentation
+
+- [backoffice/README.md](backoffice/README.md) — local development, database, OpenAPI, testing, packaging.
+
+## References
 
 - [Quarkus](https://quarkus.io/)
+- [Maven](https://maven.apache.org/)

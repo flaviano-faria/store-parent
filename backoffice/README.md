@@ -1,112 +1,126 @@
 # backoffice
 
-Store backoffice API built with Quarkus. Exposes REST endpoints for catalog, products, orders, and categories. Uses OpenAPI code generation, Hibernate ORM, and PostgreSQL.
+Quarkus **3.32** service (Java **21**) for store back-office style APIs: REST (RESTEasy Classic + Jackson), Hibernate ORM with Panache, and **PostgreSQL** in normal runtime configuration.
 
-## Prerequisites
+## What is implemented today
 
-- Java 21+
-- Maven 3.9+
-- PostgreSQL (e.g. Docker container on port 5432 with database `store`)
+JAX-RS resources and services exist for:
 
-## Development setup
+- **`GET /catalog`** — full catalog (categories and nested products)
+- **`/products`** — list, create, get by id, update, delete (see OpenAPI for exact paths and methods)
+- **`GET /hello`** — sample endpoint
 
-### 1. Generate API interfaces
+The machine-readable contract used for **code generation** is `src/main/resources/openapi/sample-openapi.yaml` (OpenAPI **3.0.3**). That file also describes **orders** and **`GET /categories`**; those paths are not backed by application classes yet unless you add them.
 
-Run `mvn clean install` before starting development. This generates JAX-RS interfaces and models from the OpenAPI spec (`src/main/resources/openapi/`). If you see "cannot find symbol" for `CatalogApi`, `ApiCatalog`, etc., run:
+A second spec, `backoffice-openapi.yaml`, is kept in the repo for other clients or future alignment; **Maven does not generate from it** unless you change `backoffice/pom.xml`.
 
-```bash
-./mvnw clean install
-```
+## Prerequisites (local run)
 
-On Windows:
+- **JDK 21**
+- **Maven 3.9+** or `./mvnw` / `mvnw.cmd` from the repo root or this module
+- **PostgreSQL** reachable at the JDBC URL you configure (see below)
 
-```bash
-mvnw.cmd clean install
-```
+### Datasource configuration
 
-### 2. Database
+Secrets are **not** stored in the repository. Set them in your environment (or a local **`.env`** file in the project root or module; that file is gitignored).
 
-Ensure PostgreSQL is running with a database named `store` on port 5432. Default config in `application.properties`:
+| Purpose | Configuration |
+|--------|-----------------|
+| Password (required for dev against a password-protected server) | `QUARKUS_DATASOURCE_PASSWORD` |
+| Username (optional) | `QUARKUS_DATASOURCE_USERNAME` — defaults to `postgres` only if unset |
+| JDBC URL (optional) | `QUARKUS_DATASOURCE_JDBC_URL` — defaults to a local `jdbc:postgresql://…` URL if unset |
 
-- Host: `localhost`
-- Port: `5432`
-- Database: `store`
-- User: `postgres`
-- Password: (configure in `application.properties`)
+Hibernate is set to **`update`** in `application.properties` so schema is applied from entities on startup.
 
-### Seed initial data
+### Optional seed data
 
-The sample data is in:
-
-- `src/main/resources/db/import-data.sql`
-
-After the app creates the tables, you can load the data with `psql`:
+After tables exist, you can load sample rows:
 
 ```bash
-psql -U postgres -d store -f src/main/resources/db/import-data.sql
+psql -U <your-db-user> -d <your-database> -f src/main/resources/db/import-data.sql
 ```
 
-## Running the application
+Paths are relative to the `backoffice` module directory.
 
-Dev mode (with live reload):
+## OpenAPI → Java
+
+On **`mvn compile`** / **`mvn install`**, the **openapi-generator-maven-plugin** runs before compilation and emits:
+
+- **Interfaces** under `com.storebackoffice.interfaces` (e.g. `CatalogApi`, `ProductsApi`)
+- **Models** under `com.storebackoffice.api.model`
+
+Output directory: `target/generated-sources/openapi/...` (added to compile sources by **build-helper-maven-plugin**).
+
+**Building from the reactor root on Windows:** the POM resolves the spec via a **`file:`** URL produced in the **`initialize`** phase (Ant + **properties-maven-plugin**) so the generator and OpenAPI tooling do not choke on `C:\...` paths.
+
+If generated types are missing in the IDE, run **`mvn generate-sources`** or a full **`mvn install`** once.
+
+## Run (development)
 
 ```bash
-./mvnw quarkus:dev
+cd backoffice
+../mvnw quarkus:dev
 ```
 
-The API is available at <http://localhost:8088>. Dev UI: <http://localhost:8088/q/dev/>.
+Or from repo root:
 
-## API endpoints
+```bash
+./mvnw -pl backoffice quarkus:dev
+```
 
-| Method | Path      | Description          |
-|--------|-----------|----------------------|
-| GET    | /catalog  | Full product catalog |
-| GET    | /hello    | Sample endpoint      |
+- **HTTP:** [http://localhost:8088](http://localhost:8088) (`quarkus.http.port`)
+- **Dev UI:** [http://localhost:8088/q/dev/](http://localhost:8088/q/dev/)
 
-Quick test for catalog:
+Quick check:
 
 ```bash
 curl -s -H "Accept: application/json" http://localhost:8088/catalog
 ```
 
-## Project structure
+## Test configuration
 
-```
-src/main/java/com/storebackoffice/
-├── controller/     # JAX-RS resources (implements OpenAPI interfaces)
-├── service/        # Business logic (e.g. CatalogService)
-├── repository/     # Quarkus/Panache data access (e.g. CategoryRepository)
-├── entity/         # JPA entities (Category, Product)
-└── (generated)    # target/generated-sources/openapi → interfaces, models
-```
+- **`%test`** uses **in-memory H2** and **`src/test/resources/import-test-h2.sql`** so **`mvn test`** does **not** require Docker or a running PostgreSQL instance.
+- **`quarkus-jdbc-h2`** is declared with **`test`** scope only; the runnable application still uses **PostgreSQL** via `quarkus-jdbc-postgresql`.
+- PostgreSQL-oriented seed for optional Docker-based workflows remains in **`import-test.sql`** (uses PostgreSQL `setval`); it is not selected by default test config.
 
-## Testing
+## Build and quality gates
 
-Unit tests (in-process):
+| Goal | Purpose |
+|------|---------|
+| `mvn test` | Unit / `@QuarkusTest` with H2 |
+| `mvn verify -DskipITs=false` | Includes **Failsafe** integration tests (e.g. `CatalogResourceIT` packaged mode); default POM sets **`skipITs=true`** |
+| `mvn package` | Produces `target/quarkus-app/` runnable layout |
 
-```bash
-./mvnw test
-```
-
-Integration tests (packaged app):
-
-```bash
-./mvnw verify -DskipITs=false
-```
-
-## Packaging
-
-```bash
-./mvnw package
-```
-
-Run the JAR:
+Run the packaged app:
 
 ```bash
 java -jar target/quarkus-app/quarkus-run.jar
 ```
 
+## Project layout
+
+```
+src/main/java/com/storebackoffice/
+├── controller/     # JAX-RS resources implementing generated API interfaces
+├── service/        # Business logic
+├── repository/     # Panache repositories
+├── entity/         # JPA entities
+└── ...
+
+src/main/resources/
+├── application.properties
+├── openapi/
+│   ├── sample-openapi.yaml   # input to OpenAPI Generator (see pom.xml)
+│   └── backoffice-openapi.yaml
+└── db/
+    └── import-data.sql
+
+target/generated-sources/openapi/   # generated interfaces & models (after build)
+```
+
 ## Learn more
 
 - [Quarkus](https://quarkus.io/)
-- [Quarkus REST](https://quarkus.io/guides/resteasy-reactive)
+- [REST with Quarkus](https://quarkus.io/guides/rest) (RESTEasy Classic / REST layer)
+- [OpenAPI Generator](https://openapi-generator.tech/)
+- [Hibernate ORM with Quarkus](https://quarkus.io/guides/hibernate-orm)
