@@ -2,11 +2,11 @@ package com.storebackoffice.service;
 
 import com.storebackoffice.api.model.ApiProduct;
 import com.storebackoffice.entity.Product;
+import com.storebackoffice.exception.ProductBadRequestException;
+import com.storebackoffice.exception.ProductNotFoundException;
 import com.storebackoffice.repository.ProductRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 
@@ -41,13 +41,13 @@ public class ProductService {
     public ApiProduct getProduct(Long id) {
         return productRepository.findByIdOptional(id)
                 .map(this::toApi)
-                .orElseThrow(() -> new NotFoundException("Product not found: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     @Transactional
     public ApiProduct updateProduct(Long id, ApiProduct body) {
         Product entity = productRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Product not found: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
         applyApiToEntity(body, entity, false);
         return toApi(entity);
     }
@@ -55,7 +55,7 @@ public class ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product entity = productRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Product not found: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
         productRepository.delete(entity);
     }
 
@@ -70,7 +70,7 @@ public class ProductService {
      */
     private void applyApiToEntity(ApiProduct body, Product entity, boolean forCreate) {
         if (!forCreate && body.getId() != null && !body.getId().equals(entity.getId())) {
-            throw new BadRequestException("Payload id does not match path id");
+            throw new ProductBadRequestException("Payload id does not match path id");
         }
         entity.setName(body.getName());
         entity.setDescription(body.getDescription());
