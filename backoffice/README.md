@@ -10,6 +10,22 @@ JAX-RS resources and services exist for:
 - **`/products`** — list, create, get by id, update, delete (see OpenAPI for exact paths and methods)
 - **`GET /hello`** — sample endpoint
 
+### Product API errors
+
+Product flows use domain exceptions under `com.storebackoffice.exception` and a Jakarta REST **`@Provider`** **`ExceptionMapper<ProductException>`** (`ProductExceptionMapper`) so clients get **JSON** error bodies with a stable shape:
+
+| Field | Description |
+|-------|-------------|
+| `status` | HTTP status (e.g. `404`, `400`) |
+| `code` | Machine-readable code (e.g. `PRODUCT_NOT_FOUND`, `PRODUCT_BAD_REQUEST`) |
+| `message` | Human-readable detail |
+| `path` | Request path (from `UriInfo`, typically prefixed with `/`) |
+| `timestamp` | ISO-8601 instant |
+
+`ProductService` throws **`ProductNotFoundException`** and **`ProductBadRequestException`** instead of generic JAX-RS exceptions so all **`/products`** errors go through this mapper.
+
+Regression coverage: `src/test/java/.../ProductExceptionHandlerTest.java`.
+
 The machine-readable contract used for **code generation** is `src/main/resources/openapi/sample-openapi.yaml` (OpenAPI **3.0.3**). That file also describes **orders** and **`GET /categories`**; those paths are not backed by application classes yet unless you add them.
 
 A second spec, `backoffice-openapi.yaml`, is kept in the repo for other clients or future alignment; **Maven does not generate from it** unless you change `backoffice/pom.xml`.
@@ -87,7 +103,7 @@ curl -s -H "Accept: application/json" http://localhost:8088/catalog
 
 | Goal | Purpose |
 |------|---------|
-| `mvn test` | Unit / `@QuarkusTest` with H2 |
+| `mvn test` | Unit / `@QuarkusTest` with H2 (includes catalog and product exception handler tests) |
 | `mvn verify -DskipITs=false` | Includes **Failsafe** integration tests (e.g. `CatalogResourceIT` packaged mode); default POM sets **`skipITs=true`** |
 | `mvn package` | Produces `target/quarkus-app/` runnable layout |
 
@@ -105,6 +121,7 @@ src/main/java/com/storebackoffice/
 ├── service/        # Business logic
 ├── repository/     # Panache repositories
 ├── entity/         # JPA entities
+├── exception/      # Product domain exceptions + ExceptionMapper (JSON error payloads)
 └── ...
 
 src/main/resources/
@@ -122,5 +139,6 @@ target/generated-sources/openapi/   # generated interfaces & models (after build
 
 - [Quarkus](https://quarkus.io/)
 - [REST with Quarkus](https://quarkus.io/guides/rest) (RESTEasy Classic / REST layer)
+- [Jakarta REST `ExceptionMapper`](https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/latest/jakarta.ws.rs/jakarta/ws/rs/ext/ExceptionMapper.html) (used by `ProductExceptionMapper`)
 - [OpenAPI Generator](https://openapi-generator.tech/)
 - [Hibernate ORM with Quarkus](https://quarkus.io/guides/hibernate-orm)
